@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Encryption and Decryption App</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        label {
+            font-weight: bold;
+        }
+        textarea {
+            resize: vertical;
+        }
+        #result {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Encryption and Decryption App</h1>
+
+    <h2>Encryption</h2>
+    <form id="encryptionForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="plaintextFile">Plaintext File:</label>
+            <input type="file" class="form-control-file" id="plaintextFile" name="plaintextFile" required>
+        </div>
+
+        <div class="form-group">
+            <label for="encryptionKey">Encryption Key:</label>
+            <textarea class="form-control" id="encryptionKey" name="encryptionKey" rows="5" cols="50" required></textarea>
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="encrypt()">Encrypt</button>
+    </form>
+
+    <hr>
+
+    <h2>Decryption</h2>
+    <form id="decryptionForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="encryptedFile">Encrypted File:</label>
+            <input type="file" class="form-control-file" id="encryptedFile" name="encryptedFile" required>
+        </div>
+
+        <div class="form-group">
+            <label for="decryptionKey">Decryption Key:</label>
+            <textarea class="form-control" id="decryptionKey" name="decryptionKey" rows="5" cols="50" required></textarea>
+        </div>
+
+        <button type="button" id="downloadKeyButton" class="btn btn-primary" onclick="decrypt()">Decrypt</button>
+    </form>
+
+    <h3>Results:</h3>
+    <div id="result"></div>
+<script>
+    // Load encryption key from backend
+    // fetch('/encryptionKey')
+    //     .then(response => response.text())
+    //     .then(data => {
+    //         document.getElementById('encryptionKey').value = data;
+    //     })
+    //     .catch(error => {
+    //         console.error('Failed to load encryption key:', error);
+    //     });
+
+    function encrypt() {
+        const plaintextFile = document.getElementById('plaintextFile').files[0];
+        const encryptionKey = document.getElementById('encryptionKey').value;
+
+        const formData = new FormData();
+        formData.append('plaintextFile', plaintextFile);
+        formData.append('encryptionKey', encryptionKey);
+
+        fetch('/encrypt', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'encrypted_data.csv';
+                link.click();
+            })
+            .catch(error => {
+                console.error('Encryption failed:', error);
+                document.getElementById('result').textContent = 'Encryption failed. Please check the console for details.';
+            });
+    }
+
+    function decrypt() {
+        const encryptedFile = document.getElementById('encryptedFile').files[0];
+        const decryptionKey = document.getElementById('decryptionKey').value;
+        const encryptionKey = document.getElementById('encryptionKey').value; // Get the encryption key
+
+        if (decryptionKey !== encryptionKey) {
+            alert("Decryption key is different from the encryption key. Please enter the correct key.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('encryptedFile', encryptedFile);
+        formData.append('decryptionKey', decryptionKey);
+
+        fetch('/decrypt', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'decrypted_data.csv';
+                link.click();
+            })
+            .catch(error => {
+                console.error('Decryption failed:', error);
+                document.getElementById('result').textContent = 'Decryption failed. Please check the console for details.';
+            });
+    }
+    $('#downloadKeyButton').click(function() {
+        var publicKey = $('#encryptionKey').val();
+        downloadKey(publicKey);
+    });
+
+    function downloadKey(publicKey) {
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(publicKey));
+        element.setAttribute('download', 'public_key.txt');
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    }
+</script>
+</div>
+</body>
+</html>
